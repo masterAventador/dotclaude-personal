@@ -1,0 +1,13 @@
+# 默认忽略所有，再用 ! 显式放行
+*
+
+# 显式放行的文件
+!.gitignore
+!CLAUDE.md
+!settings.json
+
+# 放行 plugins 目录里的两个清单文件
+!plugins/
+plugins/*
+!plugins/installed_plugins.json
+!plugins/known_marketplaces.json
