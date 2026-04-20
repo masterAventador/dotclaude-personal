@@ -53,10 +53,14 @@
 ## 接口请求与应答命名规范
 
 **核心规则:**
-- 请求类命名: `XxxReq`，响应数据类命名: `XxxData`（不是 `XxxResp`）
-- 响应数据类必须与请求类放在**同一个文件**中
+- 请求类命名: `XxxReq`（不用 `XxxResp` 这种命名习惯）
+- 响应数据类**分两类处理**：
+  - **单接口专用响应**（该数据结构只被这一个接口使用）：命名 `XxxData`，**必须与 `XxxReq` 放在同一个文件**
+  - **跨接口/跨模块复用的领域实体**（如 `User` / `Message` / `Conversation`、会被多个接口返回或被 WebSocket 事件等非 HTTP 路径使用）：放独立 `models/` 目录，保留业务命名（不强制加 `Data` 后缀）
 
-**示例:** `check_phone_exist_req.dart` 包含 `CheckPhoneExistReq` 和 `CheckPhoneExistData`
+**示例:**
+- 单接口专用：`check_phone_exist_req.dart` 包含 `CheckPhoneExistReq` 和 `CheckPhoneExistData`
+- 领域实体：`api/models/message.dart` 定义 `Message`（被 `ListMessagesReq` 返回，也被 WebSocket 推送事件复用）
 
 ## 代码复用原则
 

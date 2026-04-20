@@ -42,9 +42,10 @@
     "claude-md-management@claude-plugins-official": true,
     "commit-commands@claude-plugins-official": true,
     "pr-review-toolkit@claude-plugins-official": true,
-    "microsoft-docs@claude-plugins-official": true
+    "microsoft-docs@claude-plugins-official": true,
+    "swift-lsp@claude-plugins-official": true
   },
   "spinnerTipsEnabled": false,
-  "effortLevel": "medium",
+  "effortLevel": "xhigh",
   "voiceEnabled": false
 }
