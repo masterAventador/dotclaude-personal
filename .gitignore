@@ -11,3 +11,7 @@
 plugins/*
 !plugins/installed_plugins.json
 !plugins/known_marketplaces.json
+
+# 放行 rules/ 目录下的所有分片规则
+!rules/
+!rules/**

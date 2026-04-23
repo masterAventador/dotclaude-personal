@@ -50,18 +50,6 @@
 - ❌ "反正能用就行"不清理无效代码
 - ❌ 回滚后不验证就提交
 
-## 接口请求与应答命名规范
-
-**核心规则:**
-- 请求类命名: `XxxReq`（不用 `XxxResp` 这种命名习惯）
-- 响应数据类**分两类处理**：
-  - **单接口专用响应**（该数据结构只被这一个接口使用）：命名 `XxxData`，**必须与 `XxxReq` 放在同一个文件**
-  - **跨接口/跨模块复用的领域实体**（如 `User` / `Message` / `Conversation`、会被多个接口返回或被 WebSocket 事件等非 HTTP 路径使用）：放独立 `models/` 目录，保留业务命名（不强制加 `Data` 后缀）
-
-**示例:**
-- 单接口专用：`check_phone_exist_req.dart` 包含 `CheckPhoneExistReq` 和 `CheckPhoneExistData`
-- 领域实体：`api/models/message.dart` 定义 `Message`（被 `ListMessagesReq` 返回，也被 WebSocket 推送事件复用）
-
 ## 代码复用原则
 
 **核心规则（逻辑复用）:** 多个地方需要执行相同逻辑时，必须抽取成独立的可复用函数（如 `handleXxxResult`），在所有需要的地方调用该函数。
@@ -85,81 +73,6 @@
 **核心规则:** 无论任何情况（包括上下文压缩后），自己说的话都必须使用**中文**。所有输出内容（操作说明、改动总结、文件变更描述等）都用中文表达。代码中的变量名、方法名等可以直接引用原名，但描述性的语句必须是中文。代码本身和代码注释可以用英文。
 
 **英语纠正规则:** 如果用户用英文跟我对话，每次回答完正事后，检查用户说的英文，只要有任何不对的地方或者不符合母语者日常表达习惯的地方，都要在末尾纠正，告诉用户应该怎么说。**用户用中文对话时，回答末尾不要出现任何英语纠正相关的内容，连"English correction: ... 跳过"这种占位提示也不要写，直接结束回答。**
-
-## Flutter Widget 类型选择规范
-
-**核心规则:** 优先使用 **StatelessWidget**，使用 GetX 管理状态。
-
-**必须使用 StatefulWidget 的场景:**
-- 需要 `TickerProvider`（如 `TabController`、`AnimationController`）
-- 需要管理 `TextEditingController`、`ScrollController` 等且不适合放在 Controller 中
-
-## Flutter Widget 交互事件处理规范
-
-**核心规则:** Widget 中的交互事件（点击、长按等）不要直接处理业务逻辑，通过**回调函数向上透传**给 Controller 处理。
-
-**实现:** Widget 接收回调参数 → 事件触发时调用回调 → Controller 处理业务逻辑
-
-## Flutter Page 与 Controller 职责分离规范
-
-**核心规则:**
-- **Page**: 只负责 UI 布局，声明 Controller，绑定 UI 事件
-- **Controller**: 数据管理、网络请求、页面跳转、业务逻辑
-
-即使是简单的跳转逻辑，也应该放在 Controller 中。
-
-## Flutter 网络请求参数规范
-
-**接口请求失败必须显示 Toast:**
-- 使用 `.then()` 处理响应，不要用 try-catch
-- `resp.success` 为 false 时调用 `Toast.show(resp.errMsg)`
-
-**请求参数统一使用 parameters:**
-- 所有请求类型（GET/POST/PUT/DELETE）都用 `parameters` 方法返回参数
-- 不要用 `toJson`（那是响应数据类用的）
-
-## Flutter 项目模块引用规则
-
-**依赖方向:**
-- `business_packages` 之间**禁止**互相引用
-- `business_packages` → `foundation_packages` ✓
-- `foundation_packages` 之间 ✓
-
-业务模块间需要共享代码时，下沉到 `foundation_packages`。
-
-**路由使用规则:**
-- 只有**跨业务组件**调用页面时才需要创建路由（因为 `business_packages` 之间不能直接引用）
-- 组件内部的页面跳转，直接 `Get.to(() => XxxPage())` 即可，不需要注册路由
-
-## Flutter 资源文件管理规范
-
-**添加图片:** 只需要 2.0x 和 3.0x 版本（不需要 1x），放到对应目录后**必须在 pubspec.yaml 中单独声明该图片**（如 `- assets/images/new_image.png`），然后执行 `flutter pub get`。
-
-**原生迁移时的图片资源规范:**
-- 迁移原生已有功能到 Flutter 时，**必须使用与原生一致的图片资源**，不能用 `Icons` 或 Material 图标替代
-- 从原生项目中找到对应的图片资源，把 2.0x 和 3.0x 版本都复制到 Flutter 项目中
-- 使用 `Image.asset` 加载图片，不要用 `Icon` widget
-
-## Flutter Controller 初始化规范
-
-两种方式都可以：在 build 里 `Get.put()`（可保持 const 构造函数），或声明时直接赋值 `final c = Get.put()`（代码更清晰）。
-
-## Flutter 页面参数传递规范
-
-**核心规则:** 始终使用**创建时赋值**的方式传递参数，不要在 `onInit` 里从 `Get.arguments` 或 `Get.parameters` 获取。
-
-**唯一例外:** 在路由声明的 `GetPage` 中，可以从 `Get.arguments` 或 `Get.parameters` 取值（因为没有创建入口可以直接赋值）。
-
-**正确做法:** 调用方创建 Page/Controller 时直接传参 → Page 构造函数接收参数 → 传给 Controller 构造函数
-**错误做法:** `Get.to()` 传 arguments → Controller 在 `onInit` 里从 `Get.arguments` 读取
-
-## Flutter 页面加载状态规范
-
-**核心规则:**
-- 首次加载显示 `BJXLoadingIndicator`，刷新不显示
-- 判断条件: `if (c.isLoading.value && c.dataList.isEmpty)` 时显示 Loading
-- `isLoading` 初始化为 `true.obs`，首次加载完成后设为 `false`
-- 下拉刷新不需要修改 `isLoading`
 
 ## Git 提交规范
 
