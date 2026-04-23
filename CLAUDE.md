@@ -4,6 +4,14 @@
 
 当用户说"把XXX添加到你的全局规则里面去"或类似的表述时，应该将相关规则添加到本文件 (`~/.claude/CLAUDE.md`) 中。这个文件是全局指令文件，用于存储所有跨项目的通用规则和规范。
 
+## 新建项目前置加载规则
+
+**核心规则:** 用户要求"新建 / 创建 / 搭建 <技术栈> 项目"时，**动手前**先检查 `~/.claude/rules/` 下是否有该技术栈的规则分片（如 `flutter.md`、`flutter-business-layer.md`、`flutter-foundation-layer.md`），**有就主动 Read 全部加载**，再开始搭建。
+
+**原因:** 分片规则靠 `paths` frontmatter 按 Read 触发。空项目尚无文件可 Read，若不主动预加载会按默认结构乱搭。
+
+**适用范围:** 任何技术栈（Flutter / Java / Node / Python 等），只要 `~/.claude/rules/` 下存在对应分片就必须预加载。
+
 ## 代码删除规范
 
 **核心规则:**
