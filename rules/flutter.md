@@ -249,7 +249,7 @@ Widget 接收回调参数 → 事件触发时调用回调 → Controller 处理�
 
 ### 响应处理
 - 使用 `.then()` 处理响应，**不要用 try-catch**
-- `resp.success` 为 false 时调用 `Toast.show(resp.errMsg)`
+- `resp.success` 为 false 时调用 `Toast.show(resp.message)`
 
 ### 请求参数
 - 所有请求类型（GET/POST/PUT/DELETE）统一用 `parameters` 方法返回参数

@@ -60,7 +60,7 @@ lib/src/
 **使用约束**：
 - 业务层的请求类都继承 `BaseReq`
 - 业务层**不用封装**自己的响应基类，直接用 `BaseResp<T>`，`T` 是业务层声明好的应答数据模型
-- 业务层拿到 `BaseResp` 后先判断 `isSuccess`，true 就直接取 `resp.data`（泛型里已指定好类型）
+- 业务层拿到 `BaseResp` 后先判断 `success`，true 就直接取 `resp.data`（泛型里已指定好类型）
 - 请求参数一律走 `parameters` 方法返回，禁止用 `toJson`
 
 ---
