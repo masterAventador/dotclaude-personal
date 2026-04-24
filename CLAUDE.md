@@ -252,9 +252,9 @@
 - 子代理 prompt 中**绝对不能**写"TDD exception applies"之类的豁免语句，除非该代码确实属于 TDD skill 定义的三种例外
 - **每个 Task 提交前必须运行全量测试并确认通过**
 
-**子代理无法读取全局规则，TDD 执行靠 prompt 传递：**
-- 子代理看不到 CLAUDE.md，它只能看到我在 prompt 中给它的指令
-- 因此，**每次派遣实现子代理时，必须在 prompt 中包含完整的 TDD 流程要求**（Iron Law、Red-Green-Refactor、验证步骤）
+**TDD 任务级 prompt 注入要求（本章节作为"子代理 prompt 注入规则"的具体实例）：**
+- 虽然子代理会自动加载 `CLAUDE.md` 里的 TDD 铁律，但**任务级的 TDD 细节**必须通过 prompt 显式注入
+- **每次派遣实现子代理时，必须在 prompt 中包含完整的 TDD 流程要求**（Iron Law、Red-Green-Refactor、验证步骤）
 - 不能假设子代理"应该知道"要 TDD，必须显式写明
 - 子代理的 prompt 中必须包含：需要创建的测试文件列表、具体的测试用例描述、`mvn test` 或 `npm test` 的验证命令
 - 子代理返回后，我必须通过 spec 审查确认测试确实存在且覆盖了业务逻辑
