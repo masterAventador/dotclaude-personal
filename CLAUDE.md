@@ -6,11 +6,16 @@
 
 ## 新建项目前置加载规则
 
-**核心规则:** 用户要求"新建 / 创建 / 搭建 <技术栈> 项目"时，**动手前**先检查 `~/.claude/rules/` 下是否有该技术栈的规则分片（如 `flutter.md`、`flutter-business-layer.md`、`flutter-foundation-layer.md`），**有就主动 Read 全部加载**，再开始搭建。
+**核心规则:** 用户要求"新建 / 创建 / 搭建 <技术栈> 项目"时，**动手前**：
+
+1. 先 `ls ~/.claude/rules/` 列目录
+2. 找出文件名包含该技术栈关键词的所有分片（如 Flutter → `flutter*.md` 三分片；Java 后端 → `java-backend*.md` 三分片）
+3. **全部主动 Read 加载到 context**
+4. 再开始搭建
 
 **原因:** 分片规则靠 `paths` frontmatter 按 Read 触发。空项目尚无文件可 Read，若不主动预加载会按默认结构乱搭。
 
-**适用范围:** 任何技术栈（Flutter / Java / Node / Python 等），只要 `~/.claude/rules/` 下存在对应分片就必须预加载。
+**适用范围:** 任何技术栈（Flutter / Java 后端 / Node / Python 等），只要 `~/.claude/rules/` 下存在对应分片就必须预加载。
 
 ## 代码删除规范
 
