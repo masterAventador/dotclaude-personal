@@ -47,5 +47,6 @@
   },
   "spinnerTipsEnabled": false,
   "effortLevel": "xhigh",
+  "agentPushNotifEnabled": true,
   "voiceEnabled": false
 }
