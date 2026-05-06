@@ -4,10 +4,10 @@
     "frontend-design@claude-plugins-official": [
       {
         "scope": "user",
-        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/frontend-design/4119057b3d53",
-        "version": "4119057b3d53",
+        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/frontend-design/d7bd469eafb9",
+        "version": "d7bd469eafb9",
         "installedAt": "2026-04-15T16:08:01.805Z",
-        "lastUpdated": "2026-04-30T17:30:43.128Z"
+        "lastUpdated": "2026-05-06T16:13:07.993Z"
       }
     ],
     "superpowers@claude-plugins-official": [
@@ -23,55 +23,55 @@
     "code-review@claude-plugins-official": [
       {
         "scope": "user",
-        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/code-review/4119057b3d53",
-        "version": "4119057b3d53",
+        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/code-review/d7bd469eafb9",
+        "version": "d7bd469eafb9",
         "installedAt": "2026-04-15T16:08:37.649Z",
-        "lastUpdated": "2026-04-30T17:30:43.129Z"
+        "lastUpdated": "2026-05-06T16:13:07.993Z"
       }
     ],
     "context7@claude-plugins-official": [
       {
         "scope": "user",
-        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/context7/4119057b3d53",
-        "version": "4119057b3d53",
+        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/context7/d7bd469eafb9",
+        "version": "d7bd469eafb9",
         "installedAt": "2026-04-15T16:08:49.777Z",
-        "lastUpdated": "2026-04-30T17:30:43.129Z"
+        "lastUpdated": "2026-05-06T16:13:07.992Z"
       }
     ],
     "feature-dev@claude-plugins-official": [
       {
         "scope": "user",
-        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/feature-dev/4119057b3d53",
-        "version": "4119057b3d53",
+        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/feature-dev/d7bd469eafb9",
+        "version": "d7bd469eafb9",
         "installedAt": "2026-04-15T16:08:59.491Z",
-        "lastUpdated": "2026-04-30T17:30:43.129Z"
+        "lastUpdated": "2026-05-06T16:13:07.992Z"
       }
     ],
     "github@claude-plugins-official": [
       {
         "scope": "user",
-        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/github/4119057b3d53",
-        "version": "4119057b3d53",
+        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/github/d7bd469eafb9",
+        "version": "d7bd469eafb9",
         "installedAt": "2026-04-15T16:09:07.386Z",
-        "lastUpdated": "2026-04-30T17:30:43.130Z"
+        "lastUpdated": "2026-05-06T16:13:07.992Z"
       }
     ],
     "playwright@claude-plugins-official": [
       {
         "scope": "user",
-        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/playwright/4119057b3d53",
-        "version": "4119057b3d53",
+        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/playwright/d7bd469eafb9",
+        "version": "d7bd469eafb9",
         "installedAt": "2026-04-15T16:09:13.028Z",
-        "lastUpdated": "2026-04-30T17:30:43.129Z"
+        "lastUpdated": "2026-05-06T16:13:07.993Z"
       }
     ],
     "skill-creator@claude-plugins-official": [
       {
         "scope": "user",
-        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/skill-creator/4119057b3d53",
-        "version": "4119057b3d53",
+        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/skill-creator/d7bd469eafb9",
+        "version": "d7bd469eafb9",
         "installedAt": "2026-04-15T16:11:59.875Z",
-        "lastUpdated": "2026-04-30T17:30:43.129Z"
+        "lastUpdated": "2026-05-06T16:13:07.993Z"
       }
     ],
     "claude-md-management@claude-plugins-official": [
@@ -86,19 +86,19 @@
     "commit-commands@claude-plugins-official": [
       {
         "scope": "user",
-        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/commit-commands/4119057b3d53",
-        "version": "4119057b3d53",
+        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/commit-commands/d7bd469eafb9",
+        "version": "d7bd469eafb9",
         "installedAt": "2026-04-15T16:11:59.899Z",
-        "lastUpdated": "2026-04-30T17:30:43.130Z"
+        "lastUpdated": "2026-05-06T16:13:07.994Z"
       }
     ],
     "pr-review-toolkit@claude-plugins-official": [
       {
         "scope": "user",
-        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/pr-review-toolkit/4119057b3d53",
-        "version": "4119057b3d53",
+        "installPath": "/Users/aventador/.claude/plugins/cache/claude-plugins-official/pr-review-toolkit/d7bd469eafb9",
+        "version": "d7bd469eafb9",
         "installedAt": "2026-04-15T16:11:59.906Z",
-        "lastUpdated": "2026-04-30T17:30:43.129Z"
+        "lastUpdated": "2026-05-06T16:13:07.993Z"
       }
     ],
     "microsoft-docs@claude-plugins-official": [
