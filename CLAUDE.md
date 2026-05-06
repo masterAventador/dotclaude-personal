@@ -99,6 +99,8 @@
 
 **提交信息格式:** 只写改动内容，不添加 Claude/AI 署名（不要 Co-Authored-By 等）。
 
+**提交信息语言:** 所有 commit message **必须用中文**。包括 title 和 body。conventional commit 前缀（feat/fix/refactor/test/docs 等）可保留英文，冒号后的描述用中文。例如：`feat(workbench): 退回修改卡接入真实数据`；禁止写 `feat: add xxx endpoint`。
+
 **跨项目分支确认:** 当原生项目和 Flutter 项目都需要改代码时，如果两个项目分支名称不一致，必须先询问用户。
 
 **子模块分支确认:** 如果主模块和子模块分支名字不一样，必须先询问用户是否要在子模块创建与主模块同名的分支，还是直接提交到子模块当前分支。
@@ -132,6 +134,31 @@
 **白名单（只提交这些）:** `CLAUDE.md`、`settings.json`、`plugins/installed_plugins.json`、`plugins/known_marketplaces.json`、`.gitignore` 本身。其他全部由 `.gitignore` 排除（`projects/` 含对话记录、`history.jsonl` 含输入历史、`backups/` 含敏感 token 等都禁止提交）。
 
 **触发时机:** 每次修改完 Claude 相关配置后，立即 `git add` → `git commit` → `git push`，不要等用户提醒。
+
+## Monitor 工具使用规范
+
+**核心规则:** 用 Monitor 盯长时间任务（部署、编译等）时，**任务完成后必须主动调 `TaskStop` 杀掉 monitor**，不要让它超时自然退出。
+
+**具体:**
+- Monitor 超时自然退出会给用户推一条"Monitor timed out"通知，造成噪音
+- 用户明确知道任务已完成时（比如部署流程收到 "deploy done"），应立刻 `TaskStop(monitor_task_id)`
+- 监听脚本的 grep pattern 要**同时覆盖成功路径和失败路径**（如 `deploy done|BUILD FAIL|ERROR`），保证不管正常/异常结束都能及时推送
+- Monitor 的 `timeout_ms` 只是兜底，不应作为退出机制
+
+**典型流程:**
+1. Bash(run_in_background=true) 启动部署脚本
+2. Monitor 盯 log，推送中间进度 + 结束标记
+3. 收到 "deploy done" 或 "FAIL" 通知 → 立刻 TaskStop
+4. 继续下一步（下一轮部署 / 汇报结果）
+
+## 部署规范
+
+**核心规则:** 开发前后端的时候，**永远不要自动去部署**，除非用户明确说"部署"。
+
+**具体:**
+- 改完代码、合并到 dev 之后，**停在这一步**，等用户下指令
+- 不要主动问"要不要部署"之后就跑，即使用户上一次同意过部署，也要每次都等用户明确下指令
+- `./deploy-test-*.sh`、`npm run deploy:dev` 等部署命令只在用户说"部署"/"上测试环境"/"发布"等明确指令时才执行
 
 ## 模拟器截图等待时间规范
 
@@ -255,7 +282,7 @@
 - **前端组件不是"配置文件"**——有交互逻辑的组件（事件处理、状态变更、API 调用、表单提交）是生产代码，必须先有失败的测试
 - **"UI 代码"、"薄层封装"不是跳过 TDD 的理由**——如果代码有逻辑分支或副作用，就必须 TDD
 - 子代理 prompt 中**绝对不能**写"TDD exception applies"之类的豁免语句，除非该代码确实属于 TDD skill 定义的三种例外
-- **每个 Task 提交前必须运行全量测试并确认通过**
+- **每个 Task 必须验证测试通过，但是否跑全量见下文「Superpowers Task 测试粒度规范」**——按 task 波及范围分级，不是每个 task 无脑全量
 
 **TDD 任务级 prompt 注入要求（本章节作为"子代理 prompt 注入规则"的具体实例）：**
 - 虽然子代理会自动加载 `CLAUDE.md` 里的 TDD 铁律，但**任务级的 TDD 细节**必须通过 prompt 显式注入
@@ -276,9 +303,44 @@
 
 **违规自检:** 如果发现自己跳过了某个步骤，必须立即停下来补回去，不能"下次注意"。
 
+## Superpowers Task 测试粒度规范
+
+**核心规则:** 使用 superpowers 跑大型 plan（5+ task）时，**不是每个 task 都跑全量测试**——按 task 的"波及范围"决定测试粒度。30 个 task × 全量 = 大量重跑已经验证过的旧用例，浪费时间。
+
+**每个 Task 必跑（不可跳过）:**
+- 该 Task 新增/修改文件所属包的测试（如 `yes | fvm flutter test business_packages/ekw_topic`）
+- `flutter analyze` 防止编译警告
+- 该 Task 新增的单元测试必须先 RED 再 GREEN（TDD 铁律不变）
+
+**触发跑全量测试的场景（必须）:**
+
+| 场景 | 理由 |
+| --- | --- |
+| Task 改动涉及 foundation_packages（基础层下沉、公共组件 API 改动、共享 token 调整） | 改基础层会广泛影响所有调用方，必须全量验证 |
+| Task 修改了被多包引用的现有公共类 | 同上 |
+| Task 改动了多个业务模块间的跳转 / 共享 enum / 共享 model | 跨模块影响 |
+| 每完成一个 Phase 做一次 checkpoint（每 3-5 个 task 一组） | 防止跨 task regression 累积超过 5 个 commit，找问题成本可控 |
+| 整个 plan 完成、merge 前的 final gate | 必须 |
+
+**只跑相关包的场景:**
+- 业务模块内新增 page / controller / widget / req / 测试
+- 业务模块内私有逻辑修改
+- api 层（非跨模块共享）新增
+
+**为什么这样合理:**
+- 每个 task 的"自检测试"（新加的单测 + 相关包测试）已经覆盖你这次写的代码
+- 全量的额外价值是 catch **跨模块 regression**——但连续多个 task 都在同一模块内时，连续跑 3 次全量等于在重跑同一批旧用例
+- Phase checkpoint 把跨 task regression 的 bisect 距离控制在 5 个 commit 内，找问题代价可控
+- 只在最后跑全量的风险：Task 5 引入隐性 regression，到 Task 30 才发现要 bisect 25 个 commit；Phase checkpoint 把这个范围压到 5 个内
+
+**子代理 prompt 中要写明:**
+- 子代理看不到 CLAUDE.md，每次派遣实现子代理时必须显式说明本 task 该跑什么测试
+- 例：`只跑 business_packages/ekw_topic 包的测试 + flutter analyze 即可，不需要跑全量`
+- 或：`本 task 涉及 foundation 层下沉，必须跑全量 yes | fvm flutter test`
+
 ## 自动化测试规范
 
-**核心规则:** 所有项目的前后端代码都必须编写自动化测试，每个 Task 提交前必须运行全量测试并确认通过。
+**核心规则:** 所有项目的前后端代码都必须编写自动化测试。每个 Task 提交前必须运行**相关包**的测试并确认通过；是否跑全量按上文「Superpowers Task 测试粒度规范」分级判定（不是每个 task 都需要全量）。
 
 ### 后端测试（Java 项目）
 
@@ -294,10 +356,11 @@
 - **E2E 测试**：使用 Playwright，覆盖核心业务流程
 - **TDD 流程**：有业务逻辑的代码必须先写测试再写实现
 
-### 全量测试要求
+### 测试要求
 
-- 每个 Task 完成后必须运行前后端全量测试，确认全部通过才能提交
+- 每个 Task 完成后必须运行**相关包**的测试（具体粒度见上文「Superpowers Task 测试粒度规范」）
 - 写实现计划时，每个 Task 必须按 TDD 顺序组织步骤（测试先行），不允许先写实现再补测试
+- 整个 plan 完成、merge 前必须跑一次完整的全量测试做 final gate
 
 ## 服务器操作规范
 
