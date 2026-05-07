@@ -76,8 +76,10 @@ lib/<proj>_routes.dart    # 单文件，全是静态字符串常量
 
 **使用约束**：
 - 文件内**只放 `static const String`**，不放其他任何东西
+- **判定标准**：只有"需要被其他业务模块跳转的页面"才在这里声明路由名 + 注册到对应模块的 `_routes.dart` 中。模块内部跳转的页面**不声明**，保持路由表最少化
 - 业务模块间跳转通过 `Get.toNamed(<Proj>Routes.xxx)`，路由名从本文件取
 - 业务模块内部跳转**不需要**注册到本文件，直接 `Get.to(() => XxxPage())`
+- 完整规则见 `~/.claude/rules/flutter-business-layer.md` 第 9 节
 
 ---
 

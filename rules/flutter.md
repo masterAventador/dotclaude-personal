@@ -16,7 +16,9 @@ paths:
 
 所有 Flutter 项目统一使用两层结构：**业务层 `business_packages/` + 基础层 `foundation_packages/`**。
 
-### 完整目录树
+### 顶层目录树
+
+本节只画**项目根 + 包级**结构，**不画**任何包的内部。包内部细节由对应分片规则规定（见下方索引）。
 
 ```
 <project_root>/                              # Flutter 项目根目录
@@ -25,85 +27,29 @@ paths:
 │   └── home_page.dart                       # 集成各业务模块暴露的 tab 首页
 │
 ├── business_packages/                       # ── 业务层（按 app tab 划分模块）
-│   ├── <proj>_home/                         # tab 1 业务模块（示例）
-│   │   ├── assets/
-│   │   │   └── images/                      # 后续可扩展其他资源类型
-│   │   ├── lib/
-│   │   │   ├── <proj>_home.dart             # 门面 barrel：只 export HomePage + <Proj>HomeRoutes
-│   │   │   ├── <proj>_home_routes.dart      # 独立文件，唯一静态方法 routes() 返回 List<GetPage>
-│   │   │   └── src/
-│   │   │       ├── api/
-│   │   │       │   ├── <proj>_home_api.dart # 聚合入口，所有网络请求走这里
-│   │   │       │   ├── req/
-│   │   │       │   │   └── *_req.dart       # 每个文件含 XxxReq + XxxData
-│   │   │       │   └── models/              # 多接口共用的领域模型
-│   │   │       ├── feature_a/               # 页面 A（page + controller 必须配对）
-│   │   │       │   ├── feature_a_page.dart
-│   │   │       │   ├── feature_a_controller.dart
-│   │   │       │   └── widgets/             # 本页面私有小组件
-│   │   │       ├── feature_b/
-│   │   │       │   ├── feature_b_page.dart
-│   │   │       │   ├── feature_b_controller.dart
-│   │   │       │   └── widgets/
-│   │   │       └── widgets/                 # 本模块多页面共用组件
-│   │   └── test/
-│   │       ├── <proj>_home_suite.dart       # 测试聚合入口（供 E2E 集成用）
-│   │       ├── feature_a_controller_test.dart
-│   │       └── <proj>_home_api_test.dart
-│   ├── <proj>_message/                      # tab 2 业务模块（同上结构）
-│   ├── <proj>_profile/                      # tab 3 业务模块（同上结构）
-│   └── <proj>_auth/                         # 非 tab 业务模块（登录/注册等），走同结构
+│   ├── <proj>_home/                         # tab 1 业务模块
+│   ├── <proj>_message/                      # tab 2 业务模块
+│   ├── <proj>_profile/                      # tab 3 业务模块
+│   └── <proj>_auth/                         # 非 tab 业务模块（登录/注册等）
+│                                            # 包内结构 → flutter-business-layer.md
 │
 └── foundation_packages/                     # ── 基础层（6 个固定包）
     ├── <proj>_uikit/                        # 公共 UI 组件（Button/Input/Theme/Color）
-    │   └── lib/src/                         # 初始扁平，同类文件超 2~3 个再拆子目录
-    │
     ├── <proj>_network/                      # 网络库
-    │   └── lib/src/
-    │       ├── http_client.dart             # get/post/put/delete 封装
-    │       ├── base_req.dart                # 业务层请求基类
-    │       └── base_resp.dart               # 统一应答，data 走泛型
-    │
     ├── <proj>_routes/                       # 路由名称集中表
-    │   └── lib/<proj>_routes.dart           # 全是 static const String
-    │
-    ├── <proj>_user/                         # 用户中心（UserCenter）
-    │   └── lib/src/
-    │       ├── api/
-    │       │   ├── <proj>_user_api.dart
-    │       │   ├── req/
-    │       │   └── models/
-    │       ├── models/                      # User / Profile / Setting
-    │       ├── local/
-    │       │   └── user_cache.dart          # 封装 GetStorage
-    │       └── user_center.dart             # 内存态 + 本地缓存 + 冷启动同步读
-    │
-    ├── <proj>_bizkit/                       # 公共业务组件（结构对齐业务模块但无 routes）
-    │   ├── assets/images/
-    │   └── lib/
-    │       ├── <proj>_bizkit.dart           # barrel：直接 export 所有 page 类供业务模块调用
-    │       └── src/
-    │           ├── api/                     # 如有跨业务通用接口
-    │           ├── feature_a/               # 每个公共业务页面
-    │           │   ├── feature_a_page.dart
-    │           │   ├── feature_a_controller.dart
-    │           │   └── widgets/
-    │           └── widgets/                 # 本包内跨页面共用
-    │
+    ├── <proj>_user/                         # 用户中心
+    ├── <proj>_bizkit/                       # 公共业务组件
     └── <proj>_util/                         # 工具类
-        └── lib/src/                         # 初始扁平
-            ├── date_util.dart
-            ├── string_util.dart
-            ├── crypto_util.dart
-            └── ...
+                                             # 包内结构 → flutter-foundation-layer.md
 ```
 
 ### 结构不变性声明
 
 - 日常开发、新建模块、新建项目，**严格按**此目录树组织代码
+- 包内部结构按对应分片规则组织：
+  - 业务层细则：`~/.claude/rules/flutter-business-layer.md`
+  - 基础层细则：`~/.claude/rules/flutter-foundation-layer.md`
 - 遇到此结构覆盖不到的新场景时，**停下来与用户讨论迭代规则本身**
-- 业务层细则：`~/.claude/rules/flutter-business-layer.md`
-- 基础层细则：`~/.claude/rules/flutter-foundation-layer.md`
 
 ---
 
@@ -299,4 +245,4 @@ Widget 接收回调参数 → 事件触发时调用回调 → Controller 处理�
 - **Mock**：`mocktail`（不推荐 `mockito`，注解生成太重）
 - **E2E / 集成测试**：`integration_test`（官方包）
 - **TDD 流程**：有业务逻辑的代码必须先写失败测试 → 写最小实现 → 测试通过
-- **测试聚合入口**：每个业务包的 `test/<pkg_name>_suite.dart` 聚合所有测试，供顶层 E2E 调用
+- **测试聚合入口**：每个含测试的 package 必须有 `test/<pkg_name>_suite.dart` 聚合本包测试，供顶层 E2E 调用（业务包细则见 `flutter-business-layer.md` 第 10 节，bizkit 见 `flutter-foundation-layer.md` 第 7 节）

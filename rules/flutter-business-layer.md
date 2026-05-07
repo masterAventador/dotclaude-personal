@@ -52,19 +52,20 @@ export '<proj>_home_routes.dart';                 // 本模块路由类
 
 ## 4. `<proj>_<module>_routes.dart` 独立文件（强制）
 
-**独立文件**，不和门面合并。**唯一内容**是一个类，类里只有一个**静态方法 `routes()`** 返回 `List<GetPage>`：
+**独立文件**，不和门面合并。**唯一内容**是一个类，类里只有一个**静态方法 `routes()`** 返回 `List<GetPage>`。
+
+**注册原则（强制）**：`routes()` 里**只放需要被其他业务模块跳转的页面**。模块内部跳转的页面**不要**注册到 `routes()`，也**不要**在 `<proj>_routes` 中声明路由名（详见第 9 节）。如果本模块没有任何需要被外部跳转的页面，`routes()` 返回空列表 `[]`，但文件本身仍需保留（结构强制）。
 
 ```dart
-// <proj>_home_routes.dart
+// <proj>_message_routes.dart
 import 'package:get/get.dart';
-import 'src/feature_a/feature_a_page.dart';
-import 'src/feature_b/feature_b_page.dart';
+import 'src/chat_detail/chat_detail_page.dart';
 import 'package:<proj>_routes/<proj>_routes.dart';
 
-class <Proj>HomeRoutes {
+class <Proj>MessageRoutes {
+  // 只注册"需要被其他业务模块跳转"的页面，模块内私有页面不进这里
   static List<GetPage> routes() => [
-        GetPage(name: <Proj>Routes.featureA, page: () => FeatureAPage()),
-        GetPage(name: <Proj>Routes.featureB, page: () => FeatureBPage()),
+        GetPage(name: <Proj>Routes.chatDetail, page: () => ChatDetailPage()),
       ];
 }
 ```
@@ -126,11 +127,17 @@ src/
 
 ---
 
-## 9. 跨模块跳转走路由（强制）
+## 9. 路由注册与跳转策略（强制）
 
-- 业务模块之间跳转**必须**用 `Get.toNamed(<Proj>Routes.xxx)`，路由名从 `<proj>_routes` 取
-- 本模块内部跳转可以直接 `Get.to(() => XxxPage())`（不走路由名）
-- bizkit 页面调用**不走路由**，通过 `Get.to(() => XxxPage(...))` 直接传参（bizkit 的 barrel export 页面类可直接 import，见基础层规则）
+### 路由名 / 路由注册的判定标准
+- **只有需要被其他业务模块跳转的页面**才声明路由名（在 `<proj>_routes` 中加一条 `static const String`）+ 注册到本模块 `_routes.dart` 的 `routes()` 里
+- 模块内部跳转的页面**不声明**路由名，**不注册**到 `routes()` —— 保持路由表最少化
+- 如果一个业务模块没有任何需要被外部跳转的页面，它的 `routes()` 返回 `[]`，但文件本身仍需保留（结构强制）
+
+### 跳转方式
+- 业务模块之间跳转：**必须**用 `Get.toNamed(<Proj>Routes.xxx)`，路由名从 `<proj>_routes` 取
+- 本模块内部跳转：用 `Get.to(() => XxxPage())`，不走路由名
+- bizkit 页面调用：**不走路由**，通过 `Get.to(() => XxxPage(...))` 直接传参（bizkit 的 barrel export 页面类可直接 import，见基础层规则）
 
 ---
 
