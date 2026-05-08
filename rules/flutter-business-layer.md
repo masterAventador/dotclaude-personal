@@ -42,11 +42,11 @@ paths:
 
 ```dart
 // <proj>_home.dart
-export 'src/home/home_page.dart' show HomePage;  // tab 首页（给外层 home_page.dart 集成）
-export '<proj>_home_routes.dart';                 // 本模块路由类
+export 'src/home/home_page.dart';     // tab 首页（给外层 home_page.dart 集成）
+export '<proj>_home_routes.dart';     // 本模块路由类
 ```
 
-`src/` 下的 page / controller / api 等**不得**被外层 import，严格隐藏。
+`src/` 下的 page / controller / api 等**不得**被外层 import，严格隐藏。文件内的私有辅助类用 `_` 下划线前缀，Dart 默认就不会被 export 出去。
 
 ---
 
