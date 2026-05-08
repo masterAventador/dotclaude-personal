@@ -50,21 +50,34 @@ foundation_packages/
 
 ## 4. `<proj>_network`
 
-**职责**：HTTP 请求封装 + 请求/响应基类。
+**职责**：HTTP + WebSocket 网络封装 + 请求/响应基类。
 
 **组织**：
 ```
 lib/src/
-├── http_client.dart    # get / post / put / delete 封装
-├── base_req.dart       # 业务层请求基类
-└── base_resp.dart      # 统一应答，data 走泛型
+├── http_client.dart       # HTTP get / post / put / delete 封装
+├── base_req.dart          # 业务层请求基类
+├── base_resp.dart         # 统一应答，data 走泛型
+├── websocket_client.dart  # WebSocket 通用客户端（连接/心跳/重连）
+└── ws_state.dart          # WsState enum
 ```
 
-**使用约束**：
+**HTTP 使用约束**：
 - 业务层的请求类都继承 `BaseReq`
 - 业务层**不用封装**自己的响应基类，直接用 `BaseResp<T>`，`T` 是业务层声明好的应答数据模型
 - 业务层拿到 `BaseResp` 后先判断 `success`，true 就直接取 `resp.data`（泛型里已指定好类型）
 - 请求参数一律走 `parameters` 方法返回，禁止用 `toJson`
+- `HttpClient` 是 `abstract class` + 全 static 方法（按 CLAUDE.md「static 优先原则」），调用直接 `HttpClient.send(...)`，禁止单例写法
+
+**WebSocket 使用约束**：
+- `WebSocketClient` 暴露原始字符串流 [messages]（`Stream<String>`），**不解析任何业务协议**
+- 业务层在 `WebSocketClient` 之上加**协议适配器**（如 `ChatWsService`），适配器负责：
+  - 订阅 `WebSocketClient.messages`
+  - jsonDecode + 业务事件 parse（如 `ChatWsEvent.parse`）
+  - 暴露业务级 typed Stream（如 `Stream<ChatWsEvent>`）
+  - 业务方法（如 `send` / `ack`）调 `WebSocketClient.send` 时自己 jsonEncode
+- `WebSocketClient` 是 `abstract class` + 全 static（连接状态做成 static 字段），调用直接 `WebSocketClient.connect(uri)`
+- ping 帧格式硬编码在 `WebSocketClient` 内部（项目协议约定 `{"type":"ping"}`）；server 必须按这个 type 处理
 
 ---
 
