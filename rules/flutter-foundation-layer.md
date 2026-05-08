@@ -9,19 +9,20 @@ paths:
 
 ---
 
-## 1. 基础层构成（固定 6 包）
+## 1. 基础层构成
 
 ```
 foundation_packages/
-├── <proj>_uikit/      # 公共 UI 组件
-├── <proj>_network/    # 网络库
-├── <proj>_routes/     # 路由名称表
-├── <proj>_user/       # 用户中心
-├── <proj>_bizkit/     # 公共业务组件
-└── <proj>_util/       # 工具类
+├── <proj>_uikit/           # 公共 UI 组件（强制）
+├── <proj>_network/         # 网络库（强制）
+├── <proj>_routes/          # 路由名称表（强制）
+├── <proj>_user/            # 用户中心（强制）
+├── <proj>_bizkit/          # 公共业务组件（强制）
+├── <proj>_util/            # 工具类（强制）
+└── <proj>_test_helpers/    # 跨包共享的测试辅助（按需，仅当多个包需要共享 mock/fake 等测试代码时建）
 ```
 
-**固定组成，不得新增或删除**。遇到不在这 6 个包职责范围内的场景，先停下来与用户讨论迭代规则本身。
+前 6 个**强制必有**，第 7 个 `_test_helpers` **可选**。遇到不在这些包职责范围内的场景，先停下来与用户讨论迭代规则本身。
 
 ---
 
@@ -76,7 +77,7 @@ lib/<proj>_routes.dart    # 单文件，全是静态字符串常量
 
 **使用约束**：
 - 文件内**只放 `static const String`**，不放其他任何东西
-- **判定标准**：只有"需要被其他业务模块跳转的页面"才在这里声明路由名 + 注册到对应模块的 `_routes.dart` 中。模块内部跳转的页面**不声明**，保持路由表最少化
+- **判定标准**：只有需要被其他业务模块跳转的页面才在这里声明路由名 + 注册到对应模块的 `_routes.dart` 中。模块内部跳转的页面**不声明**，保持路由表最少化
 - 业务模块间跳转通过 `Get.toNamed(<Proj>Routes.xxx)`，路由名从本文件取
 - 业务模块内部跳转**不需要**注册到本文件，直接 `Get.to(() => XxxPage())`
 - 完整规则见 `~/.claude/rules/flutter-business-layer.md` 第 9 节
@@ -161,3 +162,30 @@ lib/src/
 - 初始阶段文件**全部扁平**放在 `lib/src/` 下
 - 同一维度工具超过 2~3 个文件时再拆子目录
 - 不要提前按维度建空文件夹
+
+---
+
+## 9. `<proj>_test_helpers`（可选）
+
+**职责**：跨业务/基础包共享的测试辅助代码（mock / fake / fixture / 测试工具方法）。
+
+**何时建**：当**多个**包的 `test/` 目录里出现**重复的 mock 类定义**（如 `MockDio`、`FakePathProvider`）时建。单包内部的测试 helper 留在该包的 `test/support/` 即可，不要进 `_test_helpers`。
+
+**关键设计：dev-only 依赖**
+
+`<proj>_test_helpers/lib/` 下的代码会 import `mocktail` / `path_provider_platform_interface` 等测试库——这些是 `_test_helpers` 自己的 `dependencies`（核心职责）。
+
+但**消费方**（其他业务/基础包）必须用 `dev_dependencies` 引用本包：
+
+```yaml
+# 消费方 pubspec.yaml
+dev_dependencies:
+  <proj>_test_helpers:
+    path: ../../foundation_packages/<proj>_test_helpers
+```
+
+**关键**：dev_dependencies 不会跨包传递到 release build，所以 mocktail 等测试库**只在测试时存在**，不会被打包进生产 APK。
+
+**禁止**：把 `_test_helpers` 写在消费方的 `dependencies`（即便它能跑通），这样会把测试库带进生产。
+
+**目录组织**：扁平放在 `lib/src/` 下，文件超过 2-3 个再拆子目录。
