@@ -118,6 +118,81 @@
 2. 我有没有跳过搜索步骤直接写？
 3. 如果有人 6 个月后想找这种功能，他能找到几份实现？（答案应是 1 份）
 
+## static 优先原则（强制）
+
+**适用范围:** 所有面向对象语言（Dart / Java / Kotlin / TypeScript / C# / Python class 等）。
+
+**核心规则:** 写**每个**方法 / 字段前必须先问一个问题——
+
+> **"这个成员需要绑定到具体实例吗？"**
+
+| 情况 | 必须 |
+|---|---|
+| 方法访问 `this.xxx`（实例字段或调用其他实例方法） | 实例方法 |
+| 方法只用入参 + 外部资源（其他 static / 全局对象 / 注入参数） | **必须 `static`** |
+| 字段值"每个实例独立" | 实例字段 |
+| 字段值"全局唯一不变" | **必须 `static`** |
+
+**绝对禁止:**
+- ❌ 看到类里有方法直接写成实例方法 —— 必须先想清楚需不需要 `this`
+- ❌ 单例模式包装一堆**不用 this** 的方法（伪实例方法）—— 这些方法本来就该是 `static`
+- ❌ `instance.xxx()` 调用一个完全不依赖实例状态的方法 —— 直接 `Xxx.xxx()` 就行
+- ❌ 写完类不复查 —— 必须自检每个方法/字段是否真用了 this
+
+**类层面的归纳:** 所有成员都是 `static` 的（按上面规则判定），整个类没有任何实例成员 —— 这种类**必须**用 `abstract class`（Dart）/ `final class + private constructor`（Java/C#）等语言对应的"不可实例化"声明。
+
+**Dart 特别说明:** `abstract class` 本身就阻止 `new`，**不需要再加私有构造** `Xxx._()`。冗余的私有构造是错误信号——大概率是误把工具类当普通类写了。
+
+**典型反例（项目里出现过的）:**
+
+```dart
+// ❌ XinqiAuthApi.loginByCode 不用 this，却被包装成单例 + 实例方法
+class XinqiAuthApi {
+  XinqiAuthApi._();
+  static final XinqiAuthApi instance = XinqiAuthApi._();
+  Future<BaseResp<LoginData>> loginByCode({...}) {     // 没用 this
+    return HttpClient.instance.send(...);
+  }
+}
+
+// ✅ 正解
+abstract class XinqiAuthApi {
+  static Future<BaseResp<LoginData>> loginByCode({...}) {
+    return HttpClient.send(...);
+  }
+}
+
+// ❌ XinqiRoutes 只有静态常量，写成普通 class + 私有构造
+class XinqiRoutes {
+  XinqiRoutes._();
+  static const String chat = '/chat';
+}
+
+// ✅ 正解
+abstract class XinqiRoutes {
+  static const String chat = '/chat';
+}
+```
+
+**违规自检（写完类后必须问自己）:**
+
+```
+1. 每个非 static 方法都至少访问了一处 this.xxx 吗？
+   - 否 → 立刻改 static
+2. 每个非 static 字段都"每个实例不一样"吗？
+   - 否 → 立刻改 static
+3. 改完后类还有任何实例成员吗？
+   - 否 → 改 abstract class（Dart）/ 加 private constructor + final（Java）
+   - 是 → 普通 class
+4. abstract class 还留着私有构造吗（仅 Dart）？
+   - 是 → 删掉，冗余
+```
+
+**为什么这条规则很重要:**
+- 单例模式包装无状态方法是**典型的过度设计**——增加了 `instance.` 调用噪音、占用一份内存、没带来任何收益
+- 这种"假实例"在测试时还得专门 mock 单例（其实直接 mock 底层依赖就够）
+- 写代码时上来就用单例是 AI 的常见错误模式 —— 必须靠这条规则强制每次写方法都问一遍"用不用 this"，从源头避免
+
 ## 文件删除安全检查
 
 **核心规则:** 删除任何文件前，必须用 Grep 搜索文件名确认没有被引用，检查配置文件（pubspec.yaml、AndroidManifest.xml、Info.plist 等）中是否有声明，确认无引用后才能删除。
