@@ -19,10 +19,12 @@ foundation_packages/
 ├── <proj>_user/            # 用户中心（强制）
 ├── <proj>_bizkit/          # 公共业务组件（强制）
 ├── <proj>_util/            # 工具类（强制）
-└── <proj>_test_helpers/    # 跨包共享的测试辅助（按需，仅当多个包需要共享 mock/fake 等测试代码时建）
+└── <proj>_test_helpers/    # 测试辅助（按需，dev-only 依赖，不进生产 APK）— 详见 §9
 ```
 
 前 6 个**强制必有**，第 7 个 `_test_helpers` **可选**。遇到不在这些包职责范围内的场景，先停下来与用户讨论迭代规则本身。
+
+**重要**：`_test_helpers` 跟前 6 个生产包性质不同——它是 dev-only 测试辅助包，消费方**必须**用 `dev_dependencies` 引用（详见 §9）。否则 mocktail 等测试库会进生产 APK。
 
 ---
 
@@ -165,7 +167,9 @@ lib/src/
 
 ---
 
-## 9. `<proj>_test_helpers`（可选）
+## 9. `<proj>_test_helpers`（可选 / **dev-only**）
+
+**TL;DR**：不是生产代码包。它的 `dependencies` 含 mocktail 等测试库，消费方**必须**用 `dev_dependencies` 引用，**禁止**写在 `dependencies`——否则测试库会被打进生产 APK。
 
 **职责**：跨业务/基础包共享的测试辅助代码（mock / fake / fixture / 测试工具方法）。
 
