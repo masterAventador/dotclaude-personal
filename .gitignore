@@ -1,17 +1,8 @@
 # 默认忽略所有，再用 ! 显式放行
 *
 
-# 显式放行的文件
+# 白名单：仅跟踪 CLAUDE.md 和 rules/ 分片规则
 !.gitignore
 !CLAUDE.md
-!settings.json
-
-# 放行 plugins 目录里的两个清单文件
-!plugins/
-plugins/*
-!plugins/installed_plugins.json
-!plugins/known_marketplaces.json
-
-# 放行 rules/ 目录下的所有分片规则
 !rules/
 !rules/**

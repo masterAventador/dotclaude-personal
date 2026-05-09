@@ -309,7 +309,7 @@ abstract class XinqiRoutes {
 
 **核心规则:** `~/.claude/` 目录下的配置、规则等内容发生变更时（包括 `CLAUDE.md`、`settings.json`、`.gitignore` 等），**必须及时提交并推送到 GitHub**（`masterAventador/dotclaude-personal` 仓库，private）。
 
-**白名单（只提交这些）:** `CLAUDE.md`、`settings.json`、`plugins/installed_plugins.json`、`plugins/known_marketplaces.json`、`.gitignore` 本身。其他全部由 `.gitignore` 排除（`projects/` 含对话记录、`history.jsonl` 含输入历史、`backups/` 含敏感 token 等都禁止提交）。
+**白名单（只提交这些）:** `CLAUDE.md`、`rules/` 目录下所有分片规则、`.gitignore` 本身。其他全部由 `.gitignore` 排除（`settings.json` / `plugins/` / `projects/` / `history.jsonl` / `backups/` 等含本地状态、对话记录、敏感 token，禁止提交）。
 
 **触发时机:** 每次修改完 Claude 相关配置后，立即 `git add` → `git commit` → `git push`，不要等用户提醒。
 
