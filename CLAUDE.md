@@ -386,6 +386,48 @@ abstract class XinqiRoutes {
 3. 立即停掉本地启动的后端服务（如 Java 进程、Node 进程等）
 4. 确认端口已释放后再继续后续工作
 
+## 本地开发服务管理规范（强制）
+
+**适用范围:** 本机开发环境的所有长期运行服务——数据库（PostgreSQL / MySQL / MongoDB 等）、缓存（Redis / Memcached）、消息队列（Kafka / RabbitMQ）、对象存储（minio）、后端服务（Spring Boot / Node / Python 等）、前端 dev server（Vite / webpack-dev-server / Next dev 等）、Docker compose 起的服务栈等等。
+
+**核心规则:** **按需启动，用完就关。禁止常驻、禁止开机自启。**
+
+**绝对禁止:**
+- ❌ `brew services start <name>`（这会设置开机自启 + 后台常驻）
+- ❌ `systemctl enable <name>`（Linux 同理）
+- ❌ Docker `docker compose up -d` 之后忘记 `down`
+- ❌ 后端 / 前端服务一启动就放着不管，下班 / 关电脑前不停
+- ❌ "反正它在后台不影响"——它影响内存、电池、安全攻击面、环境干净度
+
+**正确做法:**
+
+| 服务类型 | 启动方式 | 停止方式 |
+|---|---|---|
+| brew services（pg / redis 等） | `brew services run <name>`（不自启）或临时 `brew services start <name>` | `brew services stop <name>` |
+| 后端服务（Spring Boot / Node） | IDE 里 Run/Debug；或命令行 `mvn spring-boot:run` / `npm start` | 关 IDE 进程 / Ctrl+C |
+| 前端 dev server | `npm run dev` / `fvm flutter run` 等 | Ctrl+C |
+| Docker compose | `docker compose up`（前台跑） | Ctrl+C / `docker compose down` |
+
+**理由:**
+1. **资源占用**：pg + redis + 后端 + 前端 dev server 加起来轻松 2-4GB 内存，Mac 电池也吃
+2. **开机速度**：自启服务越多，开机越慢
+3. **安全面**：暴露的端口越多攻击面越大（即使本机也别留默认配置）
+4. **环境一致性**：每次开发前过一遍"我现在需要哪些服务"，避免上次的脏状态影响这次
+5. **强迫脑子记得它在跑**：避免出现"上次开发完忘了停，三天后才发现 redis 一直在跑"
+
+**生产环境例外:** 本规则只适用于**本机开发**。线上服务器当然要常驻 + 开机自启 + 监控守护——那是生产责任，跟本规则无关。
+
+**macOS 自检命令:**
+```bash
+brew services list           # 看是否有 started 的服务
+launchctl list | grep -v 0x  # 看 launchd 自启列表
+ps aux | grep -E "java|node|python" | grep -v grep  # 看是否有遗留进程
+```
+
+不需要的全部 stop / kill。开发要用时再 `brew services start` + 用完 `brew services stop`。
+
+**Claude 协助开发时的自觉:** 当 Claude 协助跑测试 / 部署 / 调试 / dogfood 时启动了任何后端 / 前端 / DB / 缓存等服务，**任务结束后必须主动停掉**——按本规则。不要假设"用户后面还会用所以留着"。用户需要时会重新启。
+
 ## Feature-Dev 流程规范
 
 **核心规则:** 执行 feature-dev skill 时，**不允许跳过任何步骤**。必须严格按照 Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7 的顺序执行，每个 Phase 都要完整执行，不能因为觉得"简单"或"明显"就跳过。
