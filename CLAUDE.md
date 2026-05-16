@@ -259,6 +259,37 @@ abstract class XinqiRoutes {
 
 **核心规则:** 删除任何文件前，必须用 Grep 搜索文件名确认没有被引用，检查配置文件（pubspec.yaml、AndroidManifest.xml、Info.plist 等）中是否有声明，确认无引用后才能删除。
 
+## 命令行搜索工具规范（强制）
+
+**核心规则:** 在 Bash 里搜代码 / 文件内容时，**默认使用 `rg`（ripgrep），不要用 `grep`**。
+
+**理由:**
+- 用户本机已装 `rg`（`/opt/homebrew/bin/rg`，15.x，带 `+pcre2`），可用性不是问题
+- `rg` 自动忽略 `.gitignore`，不会扫 `node_modules` / `build/` / `.next/` 等垃圾目录；`grep -r` 会全扫，又慢又脏
+- 大仓库下 `rg` 比 `grep -r` 快 5-10 倍（多线程 + SIMD + Rust 正则引擎）
+- 默认带颜色、行号、文件名分组，输出更易读
+
+**常用对应:**
+
+| 老 grep 写法 | 改成 rg |
+|---|---|
+| `grep -rn "foo" .` | `rg foo` |
+| `grep -rn "foo" --include="*.ts"` | `rg foo -t ts` |
+| `grep -rn "foo" --include="*.{ts,tsx}"` | `rg foo -t ts -t tsx` |
+| `grep -irn "foo"` | `rg -i foo` |
+| `grep -A 3 -B 3 "foo"` | `rg -C 3 foo` |
+| `grep -l "foo" -r .` | `rg -l foo` |
+| `grep -c "foo" file` | `rg -c foo file` |
+
+**例外（这些场景仍用 grep）:**
+- **处理 stdin 流**：`some_cmd | grep xxx` —— rg 也能读 stdin 但管道里 grep 更顺手
+- **服务器 / 容器内**：远程环境（如 `ssh new ...`）不一定装了 rg，先用 grep 保险，或者先 `which rg` 检查再决定
+- **要求 POSIX 严格行为**的脚本场景
+
+**绝对禁止:**
+- ❌ 在本机项目里写 `grep -rn` 递归搜代码（本机有 rg 没理由不用）
+- ❌ 边夸 rg 好用边自己用 grep —— 言行一致
+
 ## 语言交互规范
 
 **核心规则:** 无论任何情况（包括上下文压缩后），自己说的话都必须使用**中文**。所有输出内容（操作说明、改动总结、文件变更描述等）都用中文表达。代码中的变量名、方法名等可以直接引用原名，但描述性的语句必须是中文。代码本身和代码注释可以用英文。
