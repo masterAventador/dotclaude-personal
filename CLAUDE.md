@@ -282,12 +282,14 @@ abstract class XinqiRoutes {
 | `grep -c "foo" file` | `rg -c foo file` |
 
 **例外（这些场景仍用 grep）:**
-- **处理 stdin 流**：`some_cmd | grep xxx` —— rg 也能读 stdin 但管道里 grep 更顺手
 - **服务器 / 容器内**：远程环境（如 `ssh new ...`）不一定装了 rg，先用 grep 保险，或者先 `which rg` 检查再决定
 - **要求 POSIX 严格行为**的脚本场景
 
+**stdin 流也必须用 rg**（不要用 `cmd | grep xxx`）：rg 完全能读 stdin，写法相同：`cmd | rg xxx`。这条规则没有 stdin 例外。
+
 **绝对禁止:**
 - ❌ 在本机项目里写 `grep -rn` 递归搜代码（本机有 rg 没理由不用）
+- ❌ 本机项目的管道 `cmd | grep xxx` —— 同样应用 `cmd | rg xxx`
 - ❌ 边夸 rg 好用边自己用 grep —— 言行一致
 
 ## 语言交互规范
