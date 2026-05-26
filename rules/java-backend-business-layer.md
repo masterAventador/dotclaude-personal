@@ -41,7 +41,7 @@ paths:
 - **一个 `-api` 模块只有一个主 `<Domain>Api` 接口**。接口职责太多说明领域划分过粗，应拆领域
 - 接口放**顶层包**（不进 `dto/` 或其他子包）
 - DTO 放 `dto/` 子包，命名 `<Domain>Dto` / `<Domain><描述>Dto`（业务描述名）
-- 领域事件放 `event/` 子包，**必须是 Java 17 `record`**，命名 `<Domain><动作过去式>Event`
+- 领域事件放 `event/` 子包，**必须是 Java 21 `record`**，命名 `<Domain><动作过去式>Event`
 - **禁止**在 `-api` 写任何实现代码或业务逻辑
 - `-api` **不依赖**任何其他业务/基础模块（纯契约，只依赖 JDK）
 

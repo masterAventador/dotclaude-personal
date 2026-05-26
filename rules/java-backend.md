@@ -10,7 +10,7 @@ paths:
 
 遇到本规范覆盖不到的新场景时，**先停下来与用户讨论迭代规则本身**，禁止在项目里临时发挥。
 
-**技术栈**：Java 17 + Spring Boot 3.x + Maven + MySQL + Redis
+**技术栈**：Java 21 + Spring Boot 3.x + Maven + MySQL + Redis
 
 **配套分片**：
 - `java-backend-business-layer.md` — 业务层细则
@@ -311,7 +311,7 @@ HTTP 层永远 200（除非通信层错），业务成败看 body `success`：
 
 - **事件类位置**：**发布方**的 `-api/event/`（作为对外契约的一部分，订阅方只需依赖发布方的 `-api` 即可订阅）
 - **命名**：`<Domain><动作过去式>Event`（例：`UserRegisteredEvent`、`MessageSentEvent`）—— 表达"已发生的事实"
-- **类型**：**Java 17 `record`**（不可变 + 简洁）
+- **类型**：**Java 21 `record`**（不可变 + 简洁）
 - **发布**：`@Autowired ApplicationEventPublisher`，Service 里直接 `events.publishEvent(new XxxEvent(...))`
 - **订阅默认**：`@Async @TransactionalEventListener(phase = AFTER_COMMIT)`（**事务提交后异步触发**，避免"事件发了但事务回滚"的状态不一致）
 - **同步订阅例外**：罕见场景（如审计必须在事务内落库）可用普通 `@EventListener`，但**必须在代码注释说明理由**
