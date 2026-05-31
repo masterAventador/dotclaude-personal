@@ -562,8 +562,8 @@ ps aux | grep -E "java|node|python" | grep -v grep  # 看是否有遗留进程
 
 **具体要求:**
 - **test-driven-development**: 所有有业务逻辑的代码必须 TDD。先写测试 → 运行确认失败 → 写最小实现 → 运行确认通过。子代理必须在 prompt 中接收完整的 TDD skill 流程并严格执行。没有失败的测试就没有生产代码。
-- **subagent-driven-development**: 每个 Task 必须单独派遣一个子代理，完成后必须**依次**执行 spec 审查和代码质量审查，**两轮审查必须是独立的两次子代理调用**，绝对不允许合并为一次。spec 审查用 general-purpose 子代理，代码质量审查用 superpowers:code-reviewer 子代理。两轮审查都通过后才能进入下一个 Task。不允许合并多个 Task 给同一个子代理。即使觉得"Task 简单"、"逻辑不复杂"也不能合并审查，没有任何例外。
-- **子代理类型必须匹配 skill 模板定义**: 实现子代理用 general-purpose，spec 审查用 general-purpose，代码质量审查用 superpowers:code-reviewer。**绝对不能**使用 feature-dev:code-reviewer 或其他非 superpowers 体系的 agent 来执行 superpowers 流程中的步骤。
+- **subagent-driven-development**: 每个 Task 必须单独派遣一个子代理，完成后必须**依次**执行 spec 审查和代码质量审查，**两轮审查必须是独立的两次子代理调用**，绝对不允许合并为一次。spec 审查用 general-purpose 子代理，代码质量审查用 **pr-review-toolkit:code-reviewer** 子代理。两轮审查都通过后才能进入下一个 Task。不允许合并多个 Task 给同一个子代理。即使觉得"Task 简单"、"逻辑不复杂"也不能合并审查，没有任何例外。
+- **子代理类型规定（代码质量审查例外）**: 实现子代理用 general-purpose，spec 审查用 general-purpose，**代码质量审查统一用 `pr-review-toolkit:code-reviewer`**（官方市场插件，专精代码审查、带置信度过滤 + silent-failure-hunter/type-design-analyzer 等专项猎手，实测审查能力更强）。这是**有意覆盖** superpowers 模板默认的"general-purpose + requesting-code-review prompt"做法——即使在 superpowers subagent-driven 流程里，代码质量审查这一环也走 `pr-review-toolkit:code-reviewer`。**仍然禁止** feature-dev:code-reviewer。
 - **brainstorming**: 必须完整走完 checklist 的每一步，包括 spec 审查循环和用户审查。
 - **writing-plans**: 每个 chunk 写完后必须派遣审查子代理，修复所有 issues 后才能继续。
 - **executing-plans**: 必须按计划顺序执行，每个 checkpoint 都要停下来审查。
