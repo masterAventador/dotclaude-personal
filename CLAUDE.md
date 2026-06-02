@@ -400,31 +400,6 @@ abstract class XinqiRoutes {
 - 一个功能点开发完成时，清理该功能相关的所有临时截图
 - 不要等到整个任务结束才一次性清理
 
-## Playwright 测试临时文件清理规范
-
-**核心规则:** 使用 Playwright 浏览器测试/截图后，**每跑完一个用例就立即删除**该用例产生的截图和临时文件，不要等全部跑完再清理。
-
-**清理范围:**
-- 项目目录下的截图文件（`.png`、`.jpeg`）
-- `.playwright-mcp/` 目录（Playwright MCP 的日志/缓存）
-- `/tmp/` 下的 Playwright 相关临时文件
-
-**清理时机:**
-- 截图查看/对比完成后，立即删除该截图
-- 一轮页面浏览测试完成后，清理所有截图和 `.playwright-mcp/` 目录
-- 不要等到整个会话结束才清理
-
-## E2E 全量测试浏览器共享规范
-
-**核心规则:** 执行 E2E 全量测试时，**必须使用共享的浏览器和页面**，不要每个测试用例都新开一个浏览器实例。
-
-**实现方式:**
-- 在 Playwright 配置或测试 setup 中，使用共享的 browser/context/page，多个测试用例复用同一个浏览器实例
-- 避免每个 `test()` 或 `describe()` 块都独立启动和关闭浏览器
-- 全量测试开始时启动一次浏览器，所有用例跑完后再关闭
-
-**原因:** 每个用例单独开浏览器会导致执行速度极慢、系统资源浪费严重，尤其是全量测试场景下。
-
 ## E2E 全量测试后服务清理规范
 
 **核心规则:** 跑完 E2E 全量测试且最终确认没问题后，**必须主动停掉本地为测试启动的前后端服务**（如前端 dev server、后端 Spring Boot/Node 服务等），避免下次启动时端口占用报错。
@@ -622,7 +597,7 @@ ps aux | grep -E "java|node|python" | grep -v grep  # 看是否有遗留进程
 
 - **单元测试**：使用 Vitest，对工具函数、Store、API 函数、组件逻辑编写单元测试
 - **组件测试**：使用 Vitest + @vue/test-utils（Vue）或 Testing Library（React），测试组件交互逻辑
-- **E2E 测试**：使用 Playwright，覆盖核心业务流程
+- **E2E/端到端验证**：使用 agent-browser（AI 驱动 snapshot+ref 工作流 / dogfood 探索式测试），覆盖核心业务流程
 - **TDD 流程**：有业务逻辑的代码必须先写测试再写实现
 
 ### 测试要求
@@ -644,3 +619,16 @@ ps aux | grep -E "java|node|python" | grep -v grep  # 看是否有遗留进程
 - 登录方式: SSH 密钥认证（已在 `~/.ssh/config` 中配置好别名，本机公钥已推送）
 
 **操作方式:** 当需要在服务器上执行任何操作时（部署、查看日志、管理服务等），默认使用 `ssh new` 登录执行命令。只有用户明确说明是老服务器时才用 `ssh old`。
+
+## Browser Automation
+
+Use `agent-browser` for web automation. Run `agent-browser --help` for all commands.
+
+Core workflow:
+
+1. `agent-browser open <url>` - Navigate to page
+2. `agent-browser snapshot -i` - Get interactive elements with refs (@e1, @e2)
+3. `agent-browser click @e1` / `fill @e2 "text"` - Interact using refs
+4. Re-snapshot after page changes
+
+本机已复用系统 Chrome，无需跑 `agent-browser install`。默认 headless + 独立 state 目录 `~/.agent-browser`，不影响日常浏览器使用。
