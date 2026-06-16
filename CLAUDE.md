@@ -2,7 +2,11 @@
 
 ## 规则管理说明
 
-当用户说"把XXX添加到你的全局规则里面去"或类似的表述时，应该将相关规则添加到本文件 (`~/.claude/CLAUDE.md`) 中。这个文件是全局指令文件，用于存储所有跨项目的通用规则和规范。
+当用户说"把 XXX 添加到你的全局规则里面去"或类似的表述时：
+
+- **跨项目通用** → 添加到本文件 (`~/.claude/CLAUDE.md`)
+- **Flutter 通用** → 添加到 `~/.claude/rules/flutter.md`（带 `paths: "**/*.dart"` 自动按需加载）
+- **项目特定** → 添加到对应项目的 `<project>/CLAUDE.md` 或 `<project>/.claude/rules/`
 
 ## 新建项目前置加载规则
 
@@ -16,6 +20,45 @@
 **原因:** 分片规则靠 `paths` frontmatter 按 Read 触发。空项目尚无文件可 Read，若不主动预加载会按默认结构乱搭。
 
 **适用范围:** 任何技术栈（Flutter / Java 后端 / Node / Python 等），只要 `~/.claude/rules/` 下存在对应分片就必须预加载。
+
+## 命令行搜索工具规范（强制）
+
+**核心规则:** 在 Bash 里搜代码 / 文件内容时，**默认使用 `rg`（ripgrep），不要用 `grep`**。
+
+**理由:**
+- 用户本机已装 `rg`（`/opt/homebrew/bin/rg`，15.x，带 `+pcre2`），可用性不是问题
+- `rg` 自动忽略 `.gitignore`，不会扫 `node_modules` / `build/` / `.next/` 等垃圾目录；`grep -r` 会全扫，又慢又脏
+- 大仓库下 `rg` 比 `grep -r` 快 5-10 倍（多线程 + SIMD + Rust 正则引擎）
+- 默认带颜色、行号、文件名分组，输出更易读
+
+**常用对应:**
+
+| 老 grep 写法 | 改成 rg |
+|---|---|
+| `grep -rn "foo" .` | `rg foo` |
+| `grep -rn "foo" --include="*.ts"` | `rg foo -t ts` |
+| `grep -rn "foo" --include="*.{ts,tsx}"` | `rg foo -t ts -t tsx` |
+| `grep -irn "foo"` | `rg -i foo` |
+| `grep -A 3 -B 3 "foo"` | `rg -C 3 foo` |
+| `grep -l "foo" -r .` | `rg -l foo` |
+| `grep -c "foo" file` | `rg -c foo file` |
+
+**例外（这些场景仍用 grep）:**
+- **服务器 / 容器内**：远程环境（如 `ssh new ...`）不一定装了 rg，先用 grep 保险，或者先 `which rg` 检查再决定
+- **要求 POSIX 严格行为**的脚本场景
+
+**stdin 流也必须用 rg**（不要用 `cmd | grep xxx`）：rg 完全能读 stdin，写法相同：`cmd | rg xxx`。这条规则没有 stdin 例外。
+
+**在 Bash 工具里跑 rg 一律加 `--color=never`（强制关彩色高亮）。** 原因：rg 默认对匹配词加 ANSI 彩色转义码（`\x1b[31m…\x1b[0m` 包裹匹配词），这些不可见控制字符混在文本里，传到结果渲染/读取层会**偶发被处理坏**，把高亮的那个词（正好是搜索的关键词，尤其中文/方法名）显示成残字符（如 `existsCompany`→`n`/`ln`、`企业不存在`→`n`），差点导致误读代码。加 `--color=never` 输出纯文本，和 grep 默认管道行为一致，彻底排除干扰。结果正确性不受影响（只是显示坏），但会误导判断，所以强制关。grep 默认 `--color=auto`（管道自动关色）没这问题；本质是"彩色高亮 ANSI 码"的锅，不是 rg 独有，但本机 rg 在工具环境里更倾向加色，故强制 `--color=never`。
+
+**⚠️ 重要补充：`--color=never` 不一定能拦住。** 实测发现：即使 rg 加了 `--color=never`，搜索词仍会被显示坏（如 `llm`→`n`、`tongyi`→`n`、`model_name`→`model_n`、`langgenius/tongyi/tongyi`→`langgenius/n/n`，匹配词全塌成 `n`）。说明坏的来源**不是 rg 自己的 ANSI 颜色码**（那个已被关掉），而是**更上层的结果渲染层在对"搜索关键词"本身做高亮**——它按你传的 pattern 去标记匹配处，跟 rg 加不加色无关。所以"关颜色就彻底排除"在工具环境里并不成立。
+
+**真正管用的规避办法（比关颜色更可靠）：当你需要把"匹配到的那个词本身"读回来用时，不要直接搜那个词。** 改搜它旁边的锚点上下文，或直接用 Read 读那段文件。例：要确认模型名是不是 `qwen3-8b`，别 `rg "qwen3-8b"`（它正好会把 `qwen3-8b` 这串标坏），而应 `rg -A6 "model:"` 拿到它周围的纯文本，或 Read 该文件区段。一句话：**`--color=never` 照加（防 ANSI 码），但凡要读回匹配词本身，就搜锚点 / 用 Read，别搜目标词。**
+
+**绝对禁止:**
+- ❌ 在本机项目里写 `grep -rn` 递归搜代码（本机有 rg 没理由不用）
+- ❌ 本机项目的管道 `cmd | grep xxx` —— 同样应用 `cmd | rg xxx`
+- ❌ 边夸 rg 好用边自己用 grep —— 言行一致
 
 ## 代码删除规范
 
@@ -31,7 +74,7 @@
 3. 确认没有其他地方使用后，删除这些属性和方法
 4. 删除无用的网络接口方法（包括 .h 和 .m 文件）
 
-**排查清单:** 方法定义和声明、调用处、专用属性、网络接口、辅助方法、常量枚举、通知名称、UI控件
+**排查清单:** 方法定义和声明、调用处、专用属性、网络接口、辅助方法、常量枚举、通知名称、UI 控件
 
 ## 重构后清理规范
 
@@ -39,13 +82,54 @@
 - 重构完代码后，**必须排查并删除废弃的属性、变量、逻辑**
 - 这是重构工作的一部分，不是可选步骤
 
-**排查清单:** 旧属性和变量、旧方法和函数、旧常量和枚举、旧配置项（URL、host等）、旧辅助类、setter/getter中被替换的逻辑
+**排查清单:** 旧属性和变量、旧方法和函数、旧常量和枚举、旧配置项（URL、host 等）、旧辅助类、setter/getter 中被替换的逻辑
 
 **操作流程:**
 1. 完成重构的主要改动
 2. 使用 Grep 搜索被替换的旧属性/方法名
 3. 确认没有其他使用后，删除所有废弃代码
 4. 确保代码能正常编译
+
+## 后台任务等待规范（被动等通知优先，别轮询）
+
+**核心规则:** harness 能跟踪的后台任务（`Bash(run_in_background=true)`、后台 Agent、Workflow），**跑完会自动用 task-notification 把我重新唤起**。这类任务**纯被动等通知即可**——不主动 poll 任务状态，也不设 `ScheduleWakeup` 兜底唤醒去等它。中间这段时间该回合就结束，事件到了再继续。
+
+**绝对禁止:**
+- ❌ 为自己启动的、被 harness 跟踪的后台任务额外设 `ScheduleWakeup`（尤其长间隔如 200s）去"等+轮询"——完成通知本来就会来，这么做纯属多余，还把节奏拖慢、让用户以为任务很慢
+- ❌ 反复 Read 日志文件 / BashOutput 去查一个会自动通知的后台任务进度
+
+**只有这两种例外才需要主动盯:**
+1. **harness 跟踪不到的外部状态**——远程 CI、别的系统上的部署、远端队列等，不是作为"被跟踪任务"跑起来的东西，才用 Monitor 或定时唤醒去查（间隔按那个状态多快变化来定，不要无脑长间隔）
+2. **要在任务退出前、中途就抓某个日志标记**——如某个子用例一 FAIL 就立刻反应、不等整套 + 收尾全跑完，用 Monitor 盯 grep pattern 拿即时推送
+
+**一句话:** 能被 harness 跟踪的 → 被动等通知；只有跟踪不到的外部状态、或要抢任务退出前的中途标记，才主动 Monitor / 唤醒。
+
+## Monitor 工具使用规范
+
+> 适用前提：先按上面「后台任务等待规范」判断**确实需要主动盯**（外部状态 / 抢中途标记）才用 Monitor；会自动通知的被跟踪任务别上 Monitor。
+
+**核心规则:** 用 Monitor 盯长时间任务（部署、编译等）时，**任务完成后必须主动调 `TaskStop` 杀掉 monitor**，不要让它超时自然退出。
+
+**具体:**
+- Monitor 超时自然退出会给用户推一条"Monitor timed out"通知，造成噪音
+- 用户明确知道任务已完成时（比如部署流程收到 "deploy done"），应立刻 `TaskStop(monitor_task_id)`
+- 监听脚本的 grep pattern 要**同时覆盖成功路径和失败路径**（如 `deploy done|BUILD FAIL|ERROR`），保证不管正常/异常结束都能及时推送
+- Monitor 的 `timeout_ms` 只是兜底，不应作为退出机制
+
+**典型流程:**
+1. Bash(run_in_background=true) 启动部署脚本
+2. Monitor 盯 log，推送中间进度 + 结束标记
+3. 收到 "deploy done" 或 "FAIL" 通知 → 立刻 TaskStop
+4. 继续下一步（下一轮部署 / 汇报结果）
+
+## 部署规范
+
+**核心规则:** 开发前后端的时候，**永远不要自动去部署**，除非用户明确说"部署"。
+
+**具体:**
+- 改完代码、合并到 dev 之后，**停在这一步**，等用户下指令
+- 不要主动问"要不要部署"之后就跑，即使用户上一次同意过部署，也要每次都等用户明确下指令
+- `./deploy-test-*.sh`、`npm run deploy:dev` 等部署命令只在用户说"部署"/"上测试环境"/"发布"等明确指令时才执行
 
 ## Bug 修复最小改动规范
 
@@ -259,48 +343,38 @@ abstract class XinqiRoutes {
 
 **核心规则:** 删除任何文件前，必须用 Grep 搜索文件名确认没有被引用，检查配置文件（pubspec.yaml、AndroidManifest.xml、Info.plist 等）中是否有声明，确认无引用后才能删除。
 
-## 命令行搜索工具规范（强制）
-
-**核心规则:** 在 Bash 里搜代码 / 文件内容时，**默认使用 `rg`（ripgrep），不要用 `grep`**。
-
-**理由:**
-- 用户本机已装 `rg`（`/opt/homebrew/bin/rg`，15.x，带 `+pcre2`），可用性不是问题
-- `rg` 自动忽略 `.gitignore`，不会扫 `node_modules` / `build/` / `.next/` 等垃圾目录；`grep -r` 会全扫，又慢又脏
-- 大仓库下 `rg` 比 `grep -r` 快 5-10 倍（多线程 + SIMD + Rust 正则引擎）
-- 默认带颜色、行号、文件名分组，输出更易读
-
-**常用对应:**
-
-| 老 grep 写法 | 改成 rg |
-|---|---|
-| `grep -rn "foo" .` | `rg foo` |
-| `grep -rn "foo" --include="*.ts"` | `rg foo -t ts` |
-| `grep -rn "foo" --include="*.{ts,tsx}"` | `rg foo -t ts -t tsx` |
-| `grep -irn "foo"` | `rg -i foo` |
-| `grep -A 3 -B 3 "foo"` | `rg -C 3 foo` |
-| `grep -l "foo" -r .` | `rg -l foo` |
-| `grep -c "foo" file` | `rg -c foo file` |
-
-**例外（这些场景仍用 grep）:**
-- **服务器 / 容器内**：远程环境（如 `ssh new ...`）不一定装了 rg，先用 grep 保险，或者先 `which rg` 检查再决定
-- **要求 POSIX 严格行为**的脚本场景
-
-**stdin 流也必须用 rg**（不要用 `cmd | grep xxx`）：rg 完全能读 stdin，写法相同：`cmd | rg xxx`。这条规则没有 stdin 例外。
-
-**绝对禁止:**
-- ❌ 在本机项目里写 `grep -rn` 递归搜代码（本机有 rg 没理由不用）
-- ❌ 本机项目的管道 `cmd | grep xxx` —— 同样应用 `cmd | rg xxx`
-- ❌ 边夸 rg 好用边自己用 grep —— 言行一致
-
 ## 语言交互规范
 
 **核心规则:** 无论任何情况（包括上下文压缩后），自己说的话都必须使用**中文**。所有输出内容（操作说明、改动总结、文件变更描述等）都用中文表达。代码中的变量名、方法名等可以直接引用原名，但描述性的语句必须是中文。代码本身和代码注释可以用英文。
 
-**英语纠正规则:** 如果用户用英文跟我对话，每次回答完正事后，检查用户说的英文，只要有任何不对的地方或者不符合母语者日常表达习惯的地方，都要在末尾纠正，告诉用户应该怎么说。**用户用中文对话时，回答末尾不要出现任何英语纠正相关的内容，连"English correction: ... 跳过"这种占位提示也不要写，直接结束回答。**
+**英语纠正规则:** 如果用户用英文跟我对话，每次回答完正事后，检查用户说的英文，只要有任何不对的地方或者不符合母语者日常表达习惯的地方，都要在末尾纠正，告诉用户应该怎么说。**用户用中文对话时，回答末尾不要出现任何英语纠正相关的内容**，连"English correction: ... 跳过"这种占位提示也不要写，直接结束回答。
+
+**表述规范（去掉自我表白式措辞）:** 回答时直接陈述事实、结论、做法，**不要加**「不藏着」「不靠印象」「说句实话」「老实说」「坦白讲」「不骗你」「诚实交代」「说句公道话」这类自我表白 / 表忠心 / 给自己加戏式的短语和开场白。该说的事实和结论直接说，这种修饰是冗余表演，一律去掉。
+
+## 项目路径导航规则
+
+用户在非项目目录下提及项目名时，按以下默认路径查找：
+
+### 招聘项目（iOS / Android / Flutter）
+
+默认根目录：`/Users/aventador/sourceCode/bjx/recruit-app`（iOS、Android、Flutter 三个工程都在这个目录下）
+
+- **iOS**: `/Users/aventador/sourceCode/bjx/recruit-app/bjx-recruit-ios`
+- **Android**: `/Users/aventador/sourceCode/bjx/recruit-app/bjxRecruit`
+- **Flutter**: `/Users/aventador/sourceCode/bjx/recruit-app/bjx_flutter_base`（作为 submodule）
+
+用户说"去 Flutter 工程里面找 XXX"或"参考 Flutter 工程"时，默认进入上面的 `bjx_flutter_base`。当前已在 Flutter 工程中时，iOS 原生代码去**同级目录**查找（主要在 `BJXRecruitModule`）。
+
+### 学社项目
+
+- **iOS**: `/Users/aventador/sourceCode/bjx/dev-ios/learn-debug`
+- **Android**: `/Users/aventador/sourceCode/bjx/dev-android/learn-debug/bjx-media`
+
+未指定平台时，默认去 **iOS** 的学社目录。
 
 ## Git 提交规范
 
-**分支命名:** 直接使用分支名，不要用 `feature/`、`bugfix/` 等前缀。
+**分支命名:** 按所在项目/团队既有的分支命名规范来（无全局统一约束）。若团队用 `feature/日期/描述-人名` 这类带前缀的规范，就跟随团队规范。
 
 **提交时机:** 不主动提交代码，等待用户明确指令。
 
@@ -342,50 +416,11 @@ abstract class XinqiRoutes {
 
 **核心规则:** `~/.claude/` 目录下的配置、规则等内容发生变更时（包括 `CLAUDE.md`、`settings.json`、`.gitignore` 等），**必须及时提交并推送到 GitHub**（`masterAventador/dotclaude-personal` 仓库，private）。
 
+> 注：本机（家用机）同步到 `dotclaude-personal`；公司机同步到 `dotclaude`。各机器推各自的仓库，别推错。
+
 **白名单（只提交这些）:** `CLAUDE.md`、`rules/` 目录下所有分片规则、`.gitignore` 本身。其他全部由 `.gitignore` 排除（`settings.json` / `plugins/` / `projects/` / `history.jsonl` / `backups/` 等含本地状态、对话记录、敏感 token，禁止提交）。
 
 **触发时机:** 每次修改完 Claude 相关配置后，立即 `git add` → `git commit` → `git push`，不要等用户提醒。
-
-## 后台任务等待规范（被动等通知优先，别轮询）
-
-**核心规则:** harness 能跟踪的后台任务（`Bash(run_in_background=true)`、后台 Agent、Workflow），**跑完会自动用 task-notification 把我重新唤起**。这类任务**纯被动等通知即可**——不主动 poll 任务状态，也不设 `ScheduleWakeup` 兜底唤醒去等它。中间这段时间该回合就结束，事件到了再继续。
-
-**绝对禁止:**
-- ❌ 为自己启动的、被 harness 跟踪的后台任务额外设 `ScheduleWakeup`（尤其长间隔如 200s）去"等+轮询"——完成通知本来就会来，这么做纯属多余，还把节奏拖慢、让用户以为任务很慢
-- ❌ 反复 Read 日志文件 / BashOutput 去查一个会自动通知的后台任务进度
-
-**只有这两种例外才需要主动盯:**
-1. **harness 跟踪不到的外部状态**——远程 CI、别的系统上的部署、远端队列等，不是作为"被跟踪任务"跑起来的东西，才用 Monitor 或定时唤醒去查（间隔按那个状态多快变化来定，不要无脑长间隔）
-2. **要在任务退出前、中途就抓某个日志标记**——如某个子用例一 FAIL 就立刻反应、不等整套 + 收尾全跑完，用 Monitor 盯 grep pattern 拿即时推送
-
-**一句话:** 能被 harness 跟踪的 → 被动等通知；只有跟踪不到的外部状态、或要抢任务退出前的中途标记，才主动 Monitor / 唤醒。
-
-## Monitor 工具使用规范
-
-> 适用前提：先按上面「后台任务等待规范」判断**确实需要主动盯**（外部状态 / 抢中途标记）才用 Monitor；会自动通知的被跟踪任务别上 Monitor。
-
-**核心规则:** 用 Monitor 盯长时间任务（部署、编译等）时，**任务完成后必须主动调 `TaskStop` 杀掉 monitor**，不要让它超时自然退出。
-
-**具体:**
-- Monitor 超时自然退出会给用户推一条"Monitor timed out"通知，造成噪音
-- 用户明确知道任务已完成时（比如部署流程收到 "deploy done"），应立刻 `TaskStop(monitor_task_id)`
-- 监听脚本的 grep pattern 要**同时覆盖成功路径和失败路径**（如 `deploy done|BUILD FAIL|ERROR`），保证不管正常/异常结束都能及时推送
-- Monitor 的 `timeout_ms` 只是兜底，不应作为退出机制
-
-**典型流程:**
-1. Bash(run_in_background=true) 启动部署脚本
-2. Monitor 盯 log，推送中间进度 + 结束标记
-3. 收到 "deploy done" 或 "FAIL" 通知 → 立刻 TaskStop
-4. 继续下一步（下一轮部署 / 汇报结果）
-
-## 部署规范
-
-**核心规则:** 开发前后端的时候，**永远不要自动去部署**，除非用户明确说"部署"。
-
-**具体:**
-- 改完代码、合并到 dev 之后，**停在这一步**，等用户下指令
-- 不要主动问"要不要部署"之后就跑，即使用户上一次同意过部署，也要每次都等用户明确下指令
-- `./deploy-test-*.sh`、`npm run deploy:dev` 等部署命令只在用户说"部署"/"上测试环境"/"发布"等明确指令时才执行
 
 ## 模拟器截图等待时间规范
 
@@ -400,12 +435,31 @@ abstract class XinqiRoutes {
 - 一个功能点开发完成时，清理该功能相关的所有临时截图
 - 不要等到整个任务结束才一次性清理
 
-## E2E 全量测试后服务清理规范
+## 浏览器自动化工具选择规范（agent-browser 优先）
 
-**核心规则:** 跑完 E2E 全量测试且最终确认没问题后，**必须主动停掉本地为测试启动的前后端服务**（如前端 dev server、后端 Spring Boot/Node 服务等），避免下次启动时端口占用报错。
+**核心规则:** 凡是 **AI agent 驱动的网页操作**——打开网页、点按钮、填表单、截图、抓取数据、登录站点、探索式测试 / dogfooding / QA / 查 bug——**一律优先用 `agent-browser`，不要默认用 Playwright / Puppeteer / 内置 web 工具**。
+
+**为什么:** agent-browser 是 Rust CLI + 常驻 daemon，基于 accessibility tree 返回带 ref 编号（`@e1`/`@e2`）的可交互元素，确定性强、不用猜 CSS 选择器，对 AI 友好且执行快。
+
+**核心工作流:**
+1. `agent-browser open <url>` — 打开页面
+2. `agent-browser snapshot -i` — 拿到带 ref（`@e1`、`@e2`）的可交互元素
+3. `agent-browser click @e1` / `agent-browser fill @e2 "文本"` — 用 ref 交互
+4. 页面变化后重新 `snapshot -i`
+5. 完整命令查 `agent-browser --help`，详细工作流见全局 skill `agent-browser`
+
+**有头 / 无头:** agent-browser **默认无头（headless）**。需要看到浏览器窗口时加 `--headed`，或设 `AGENT_BROWSER_HEADED=true`，或在 `agent-browser.json` / `~/.agent-browser/config.json` 里写 `"headed": true`。
+
+**本机环境（重要）:** 本机 `agent-browser install` 下载 Chrome for Testing 会卡在 `storage.googleapis.com`（无代理下不动），已改为复用系统 Chrome——用户级配置 `~/.agent-browser/config.json` 里设了 `executablePath` 指向 `/Applications/Google Chrome.app/...`，**无需再跑 `agent-browser install`**，直接用即可。
+
+**截图临时文件清理:** 用 agent-browser 截图后，每看完/对比完一轮就立即删掉该轮截图，不要积累到任务结束（同「UI 开发临时文件清理规范」）。agent-browser 是常驻 daemon、单浏览器复用，不存在"每个用例新开浏览器"的问题，用完记得 `agent-browser close`。
+
+## 本地联调/测试后服务清理规范
+
+**核心规则:** 在本机起前后端服务做联调或跑测试、最终确认没问题后，**必须主动停掉本地为此启动的前后端服务**（如前端 dev server、后端 Spring Boot/Node 进程等），避免下次启动时端口占用报错。
 
 **操作流程:**
-1. 全量 E2E 测试通过，确认无问题
+1. 联调/测试通过，确认无问题
 2. 立即停掉本地启动的前端服务（如 `npm run dev`、`vite` 等）
 3. 立即停掉本地启动的后端服务（如 Java 进程、Node 进程等）
 4. 确认端口已释放后再继续后续工作
@@ -597,7 +651,7 @@ ps aux | grep -E "java|node|python" | grep -v grep  # 看是否有遗留进程
 
 - **单元测试**：使用 Vitest，对工具函数、Store、API 函数、组件逻辑编写单元测试
 - **组件测试**：使用 Vitest + @vue/test-utils（Vue）或 Testing Library（React），测试组件交互逻辑
-- **E2E/端到端验证**：使用 agent-browser（AI 驱动 snapshot+ref 工作流 / dogfood 探索式测试），覆盖核心业务流程
+- **E2E / 浏览器自动化**：使用 `agent-browser`，覆盖核心业务流程（见「浏览器自动化工具选择规范」）
 - **TDD 流程**：有业务逻辑的代码必须先写测试再写实现
 
 ### 测试要求
@@ -619,16 +673,3 @@ ps aux | grep -E "java|node|python" | grep -v grep  # 看是否有遗留进程
 - 登录方式: SSH 密钥认证（已在 `~/.ssh/config` 中配置好别名，本机公钥已推送）
 
 **操作方式:** 当需要在服务器上执行任何操作时（部署、查看日志、管理服务等），默认使用 `ssh new` 登录执行命令。只有用户明确说明是老服务器时才用 `ssh old`。
-
-## Browser Automation
-
-Use `agent-browser` for web automation. Run `agent-browser --help` for all commands.
-
-Core workflow:
-
-1. `agent-browser open <url>` - Navigate to page
-2. `agent-browser snapshot -i` - Get interactive elements with refs (@e1, @e2)
-3. `agent-browser click @e1` / `fill @e2 "text"` - Interact using refs
-4. Re-snapshot after page changes
-
-本机已复用系统 Chrome，无需跑 `agent-browser install`。默认 headless + 独立 state 目录 `~/.agent-browser`，不影响日常浏览器使用。
