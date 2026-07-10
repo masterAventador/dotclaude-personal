@@ -435,9 +435,9 @@ abstract class XinqiRoutes {
 - 一个功能点开发完成时，清理该功能相关的所有临时截图
 - 不要等到整个任务结束才一次性清理
 
-## 浏览器自动化工具选择规范（agent-browser 优先）
+## 浏览器自动化工具选择规范
 
-**核心规则:** 凡是 **AI agent 驱动的网页操作**——打开网页、点按钮、填表单、截图、抓取数据、登录站点、探索式测试 / dogfooding / QA / 查 bug——**一律优先用 `agent-browser`，不要默认用 Playwright / Puppeteer / 内置 web 工具**。
+**核心规则:** 常规网页搜索、资料查询和信息调研优先使用内置 Search / Web 工具。只有任务需要实际点击、登录、填写表单、操作网页、截图，或进行浏览器自动化、探索式测试 / dogfooding / QA / 查 bug 时，才使用 `agent-browser`，不要默认用 Playwright / Puppeteer。
 
 **为什么:** agent-browser 是 Rust CLI + 常驻 daemon，基于 accessibility tree 返回带 ref 编号（`@e1`/`@e2`）的可交互元素，确定性强、不用猜 CSS 选择器，对 AI 友好且执行快。
 
