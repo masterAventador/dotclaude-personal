@@ -435,9 +435,11 @@ abstract class XinqiRoutes {
 - 一个功能点开发完成时，清理该功能相关的所有临时截图
 - 不要等到整个任务结束才一次性清理
 
-## 浏览器自动化工具选择规范
+## AI 浏览器操作工具规范
 
-**核心规则:** 常规网页搜索、资料查询和信息调研优先使用内置 Search / Web 工具。只有任务需要实际点击、登录、填写表单、操作网页、截图，或进行浏览器自动化、探索式测试 / dogfooding / QA / 查 bug 时，才使用 `agent-browser`，不要默认用 Playwright / Puppeteer。
+**核心规则:** 常规网页搜索、资料查询和信息调研优先使用内置 Search / Web 工具。`agent-browser` 只作为 AI 操作浏览器的“手脚”，用于需要实际打开页面、点击、登录、填写表单、操作网页、截图、探索或辅助排查问题的临时交互任务。
+
+**工具边界:** `agent-browser` 不是项目自动化测试框架，不能替代 Playwright、Cypress 等专业 E2E 工具，也不能把 AI 临时操作浏览器的结果当作项目 E2E 测试。项目 E2E 默认使用 Playwright，测试代码必须纳入仓库、可重复执行并可接入 CI。`agent-browser` 可以辅助 AI 做探索性检查和人工式验证，但不计入自动化测试覆盖。
 
 **为什么:** agent-browser 是 Rust CLI + 常驻 daemon，基于 accessibility tree 返回带 ref 编号（`@e1`/`@e2`）的可交互元素，确定性强、不用猜 CSS 选择器，对 AI 友好且执行快。
 
@@ -651,7 +653,7 @@ ps aux | grep -E "java|node|python" | grep -v grep  # 看是否有遗留进程
 
 - **单元测试**：使用 Vitest，对工具函数、Store、API 函数、组件逻辑编写单元测试
 - **组件测试**：使用 Vitest + @vue/test-utils（Vue）或 Testing Library（React），测试组件交互逻辑
-- **E2E / 浏览器自动化**：使用 `agent-browser`，覆盖核心业务流程（见「浏览器自动化工具选择规范」）
+- **E2E / 浏览器自动化测试**：默认使用 Playwright，测试代码必须纳入仓库、可重复执行并可接入 CI，覆盖核心业务流程；`agent-browser` 仅作为 AI 临时操作浏览器的工具，不作为 E2E 测试框架（见「AI 浏览器操作工具规范」）
 - **TDD 流程**：有业务逻辑的代码必须先写测试再写实现
 
 ### 测试要求
