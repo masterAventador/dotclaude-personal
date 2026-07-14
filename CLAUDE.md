@@ -35,45 +35,6 @@
 - 单一、简单且可以立即完成的任务无需为了形式强行创建计划；
 - 使用当前环境实际提供的计划或任务工具；用户可见 `[Tn]` 编号只用于跨工具指代，不等同于产品内部 Task ID，也不写入特定产品才支持的参数或依赖语法。
 
-## 命令行搜索工具规范（强制）
-
-**核心规则:** 在 Bash 里搜代码 / 文件内容时，**默认使用 `rg`（ripgrep），不要用 `grep`**。
-
-**理由:**
-- 用户本机已装 `rg`（`/opt/homebrew/bin/rg`，15.x，带 `+pcre2`），可用性不是问题
-- `rg` 自动忽略 `.gitignore`，不会扫 `node_modules` / `build/` / `.next/` 等垃圾目录；`grep -r` 会全扫，又慢又脏
-- 大仓库下 `rg` 比 `grep -r` 快 5-10 倍（多线程 + SIMD + Rust 正则引擎）
-- 默认带颜色、行号、文件名分组，输出更易读
-
-**常用对应:**
-
-| 老 grep 写法 | 改成 rg |
-|---|---|
-| `grep -rn "foo" .` | `rg foo` |
-| `grep -rn "foo" --include="*.ts"` | `rg foo -t ts` |
-| `grep -rn "foo" --include="*.{ts,tsx}"` | `rg foo -t ts -t tsx` |
-| `grep -irn "foo"` | `rg -i foo` |
-| `grep -A 3 -B 3 "foo"` | `rg -C 3 foo` |
-| `grep -l "foo" -r .` | `rg -l foo` |
-| `grep -c "foo" file` | `rg -c foo file` |
-
-**例外（这些场景仍用 grep）:**
-- **服务器 / 容器内**：远程环境（如 `ssh new ...`）不一定装了 rg，先用 grep 保险，或者先 `which rg` 检查再决定
-- **要求 POSIX 严格行为**的脚本场景
-
-**stdin 流也必须用 rg**（不要用 `cmd | grep xxx`）：rg 完全能读 stdin，写法相同：`cmd | rg xxx`。这条规则没有 stdin 例外。
-
-**在 Bash 工具里跑 rg 一律加 `--color=never`（强制关彩色高亮）。** 原因：rg 默认对匹配词加 ANSI 彩色转义码（`\x1b[31m…\x1b[0m` 包裹匹配词），这些不可见控制字符混在文本里，传到结果渲染/读取层会**偶发被处理坏**，把高亮的那个词（正好是搜索的关键词，尤其中文/方法名）显示成残字符（如 `existsCompany`→`n`/`ln`、`企业不存在`→`n`），差点导致误读代码。加 `--color=never` 输出纯文本，和 grep 默认管道行为一致，彻底排除干扰。结果正确性不受影响（只是显示坏），但会误导判断，所以强制关。grep 默认 `--color=auto`（管道自动关色）没这问题；本质是"彩色高亮 ANSI 码"的锅，不是 rg 独有，但本机 rg 在工具环境里更倾向加色，故强制 `--color=never`。
-
-**⚠️ 重要补充：`--color=never` 不一定能拦住。** 实测发现：即使 rg 加了 `--color=never`，搜索词仍会被显示坏（如 `llm`→`n`、`tongyi`→`n`、`model_name`→`model_n`、`langgenius/tongyi/tongyi`→`langgenius/n/n`，匹配词全塌成 `n`）。说明坏的来源**不是 rg 自己的 ANSI 颜色码**（那个已被关掉），而是**更上层的结果渲染层在对"搜索关键词"本身做高亮**——它按你传的 pattern 去标记匹配处，跟 rg 加不加色无关。所以"关颜色就彻底排除"在工具环境里并不成立。
-
-**真正管用的规避办法（比关颜色更可靠）：当你需要把"匹配到的那个词本身"读回来用时，不要直接搜那个词。** 改搜它旁边的锚点上下文，或直接用 Read 读那段文件。例：要确认模型名是不是 `qwen3-8b`，别 `rg "qwen3-8b"`（它正好会把 `qwen3-8b` 这串标坏），而应 `rg -A6 "model:"` 拿到它周围的纯文本，或 Read 该文件区段。一句话：**`--color=never` 照加（防 ANSI 码），但凡要读回匹配词本身，就搜锚点 / 用 Read，别搜目标词。**
-
-**绝对禁止:**
-- ❌ 在本机项目里写 `grep -rn` 递归搜代码（本机有 rg 没理由不用）
-- ❌ 本机项目的管道 `cmd | grep xxx` —— 同样应用 `cmd | rg xxx`
-- ❌ 边夸 rg 好用边自己用 grep —— 言行一致
-
 ## 代码删除规范
 
 **核心规则:**
