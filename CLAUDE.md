@@ -483,6 +483,8 @@ abstract class XinqiRoutes {
 
 **生产环境例外:** 本规则只适用于**本机开发**。线上服务器当然要常驻 + 开机自启 + 监控守护——那是生产责任，跟本规则无关。
 
+**用户明确指定的常驻例外:** `cliproxyapi`（Claude Code 走 Codex 订阅的本地转发，监听 127.0.0.1:18317，zshrc 的 `c-cd` 函数依赖它）由用户明确要求 `brew services start cliproxyapi` 常驻 + 开机自启。执行本规范的自检清理时**不要 stop 它**；其余服务仍按"按需启动，用完就关"。
+
 **macOS 自检命令:**
 ```bash
 brew services list           # 看是否有 started 的服务
